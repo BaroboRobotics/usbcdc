@@ -1,0 +1,3 @@
+[submodule "CFPP"]
+	path = CFPP
+	url = git@github.com:BaroboRobotics/CFPP.git
