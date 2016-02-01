@@ -1,8 +1,7 @@
 #ifndef USBCDC_DEVICES_HPP
 #define USBCDC_DEVICES_HPP
 
-#include <boost/range/any_range.hpp>
-
+#include <list>
 #include <string>
 
 namespace usbcdc {
@@ -20,14 +19,8 @@ private:
     std::string mProductString;
 };
 
-// The third parameter to any_range (Reference) must be const to work around a
-// Boost bug: https://svn.boost.org/trac/boost/ticket/10493
-// Non-const makes it segfault. Weirdly, it must not be a reference, or else
-// there's some other problem.
-// TODO implement using a pimpled iterator_facade instead to avoid this chicanery.
-using DeviceRange = boost::any_range<Device, boost::single_pass_traversal_tag, const Device, ptrdiff_t>;
-
-DeviceRange devices ();
+using DeviceList = std::list<Device>;
+DeviceList devices ();
 
 } // namespace usbcdc
 

@@ -209,10 +209,13 @@ static Device toDevice (DevInfo di) {
 
 using namespace boost::adaptors;
 
-DeviceRange devices () {
+DeviceList devices () {
+    using std::begin;
+    using std::end;
     auto diIter = DevInfoIterator{};
-    return boost::make_iterator_range(begin(diIter), end(diIter))
+    auto rng = boost::make_iterator_range(begin(diIter), end(diIter))
         | transformed(toDevice);
+    return DeviceList(begin(rng), end(rng));
 }
 
 } // namespace usbcdc

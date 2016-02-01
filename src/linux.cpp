@@ -113,13 +113,16 @@ static bool deviceIsValid (const Device& d) {
     return d.path().size() && d.productString().size();
 }
 
-DeviceRange devices () {
-    return traverseDir(sysDevices())
+DeviceList devices () {
+    using std::begin;
+    using std::end;
+    auto rng = traverseDir(sysDevices())
         | filtered(BySubsystem{"usb"})
         | filtered(ByUsbInterfaceClass{UsbClass::cdc})
         | transformed(toDevice)
         | filtered(deviceIsValid)
         ;
+    return DeviceList(begin(rng), end(rng));
 }
 
 } // namespace usbcdc

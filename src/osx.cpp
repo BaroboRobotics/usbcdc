@@ -137,9 +137,11 @@ private:
     Device mDevice;
 };
 
-DeviceRange devices () {
+DeviceList devices () {
+    using std::begin;
+    using std::end;
     auto it = DeviceIterator{};
-    return boost::make_iterator_range(begin(it), end(it));
+    return DeviceList(begin(it), end(it));
 }
 
 } // namespace usbcdc
