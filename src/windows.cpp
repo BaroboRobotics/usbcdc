@@ -146,7 +146,7 @@ private:
 
 class DevInfoIterator
     : public boost::iterator_facade<
-        DevInfoIterator, DevInfo, boost::single_pass_traversal_tag
+        DevInfoIterator, DevInfo, boost::single_pass_traversal_tag, const DevInfo&
     > {
 public:
     DevInfoIterator ()
@@ -193,7 +193,7 @@ private:
             && (kEnd == mIndex || mDevInfo.mHandle == other.mDevInfo.mHandle);
     }
 
-    DevInfo dereference () const {
+    reference dereference () const {
         return mDevInfo;//const_cast<DevInfo&>(mDevInfo);
     }
 

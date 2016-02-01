@@ -22,7 +22,9 @@ private:
 
 // The third parameter to any_range (Reference) must be const to work around a
 // Boost bug: https://svn.boost.org/trac/boost/ticket/10493
-// Non-const makes it segfault.
+// Non-const makes it segfault. Weirdly, it must not be a reference, or else
+// there's some other problem.
+// TODO implement using a pimpled iterator_facade instead to avoid this chicanery.
 using DeviceRange = boost::any_range<Device, boost::single_pass_traversal_tag, const Device, ptrdiff_t>;
 
 DeviceRange devices ();
