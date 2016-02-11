@@ -1,5 +1,7 @@
 #include <usbcdc/devices.hpp>
 
+#include <util/windows/error.hpp>
+
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -8,7 +10,6 @@
 #include <memory>
 
 #include "windows_guids.hpp"
-#include "windows_error.hpp"
 #include "windows_utf.hpp"
 
 #include <windows.h>
@@ -45,7 +46,7 @@ static std::shared_ptr<void> makeDevInfoList (const GUID* classGuid, const char*
     auto diList = SetupDiGetClassDevs(classGuid, enumerator, nullptr, DIGCF_PRESENT);
     if (INVALID_HANDLE_VALUE == diList) {
         auto err = GetLastError();
-        throw WindowsError{"SetupDiGetClassDevs", err};
+        throw util::windows::Error{"SetupDiGetClassDevs", err};
     }
     return std::shared_ptr<void>(diList, SetupDiDestroyDeviceInfoList);
 }
@@ -87,7 +88,7 @@ private:
                                                &size)) {
             auto err = GetLastError();
             if (ERROR_INSUFFICIENT_BUFFER != err) {
-                throw WindowsError{"SetupDiGetDeviceRegistryProperty", err};
+                throw util::windows::Error{"SetupDiGetDeviceRegistryProperty", err};
             }
         }
 
@@ -96,7 +97,7 @@ private:
                                                key, &type,
                                                PBYTE(result.data()), size,
                                                nullptr)) {
-            throw WindowsError{"SetupDiGetDeviceRegistryProperty", GetLastError()};
+            throw util::windows::Error{"SetupDiGetDeviceRegistryProperty", GetLastError()};
         }
 
         if (REG_SZ != type) {
@@ -116,7 +117,7 @@ private:
                                             &size, 0)) {
             auto err = GetLastError();
             if (ERROR_INSUFFICIENT_BUFFER != err) {
-                throw WindowsError{"SetupDiGetDeviceProperty", err};
+                throw util::windows::Error{"SetupDiGetDeviceProperty", err};
             }
         }
 
@@ -129,7 +130,7 @@ private:
                                             key, &type,
                                             PBYTE(result.data()), size,
                                             nullptr, 0)) {
-            throw WindowsError{"SetupDiGetDeviceProperty", GetLastError()};
+            throw util::windows::Error{"SetupDiGetDeviceProperty", GetLastError()};
         }
 
         if (DEVPROP_TYPE_STRING != type) {
@@ -180,7 +181,7 @@ private:
                     mIndex = kEnd;
                 }
                 else if (ERROR_SUCCESS != err) {
-                    throw WindowsError{"SetupDiEnumDeviceInfo", err};
+                    throw util::windows::Error{"SetupDiEnumDeviceInfo", err};
                 }
             }
         }

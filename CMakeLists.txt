@@ -18,7 +18,7 @@ set_target_properties(usbcdc
                )
 
 target_include_directories(usbcdc PUBLIC include ${Boost_INCLUDE_DIRS})
-target_link_libraries(usbcdc PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(usbcdc PUBLIC cxx-util ${Boost_LIBRARIES})
 
 if(WIN32)
     target_link_libraries(usbcdc PRIVATE setupapi)
