@@ -13,7 +13,7 @@ set(SOURCES src/devices.cpp)
 add_library(usbcdc STATIC ${SOURCES})
 
 set_target_properties(usbcdc
-    PROPERTIES CXX_STANDARD 11
+    PROPERTIES CXX_STANDARD 14
                CXX_STANDARD_REQUIRED ON
                )
 
