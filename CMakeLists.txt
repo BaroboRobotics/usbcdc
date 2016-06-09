@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2.1)
 project(usbcdc VERSION 0.1.0)
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.59.0 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(cxx-util)
 
 if(APPLE)
