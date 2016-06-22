@@ -34,7 +34,7 @@ static fs::path sysDevices () {
 }
 
 static boost::iterator_range<fs::recursive_directory_iterator>
-traverseDir (const fs::path& root) {
+traverseDirR (const fs::path& root) {
     return boost::make_iterator_range(
         fs::recursive_directory_iterator{root},
         fs::recursive_directory_iterator{});
@@ -89,7 +89,7 @@ static Device toDevice (const fs::path& p) {
         std::string productString;
         fs::ifstream productStream{productPath};
         if (std::getline(productStream, productString)) {
-            for (const auto& tty : traverseDir(p / "tty")
+            for (const auto& tty : traverseDirR(p / "tty")
                                    | filtered(BySubsystem{"tty"})) {
                 auto uePath = tty / "uevent";
                 if (fs::exists(uePath)) {
@@ -116,7 +116,7 @@ static bool deviceIsValid (const Device& d) {
 DeviceList devices () {
     using std::begin;
     using std::end;
-    auto rng = traverseDir(sysDevices())
+    auto rng = traverseDirR(sysDevices())
         | filtered(BySubsystem{"usb"})
         | filtered(ByUsbInterfaceClass{UsbClass::cdc})
         | transformed(toDevice)
