@@ -1,7 +1,9 @@
 #ifndef USBCDC_DEVICES_HPP
 #define USBCDC_DEVICES_HPP
 
-#include <list>
+#include <algorithm>
+#include <iostream>
+#include <set>
 #include <string>
 
 namespace usbcdc {
@@ -19,8 +21,11 @@ private:
     std::string mProductString;
 };
 
-using DeviceList = std::list<Device>;
-DeviceList devices ();
+std::ostream& operator<< (std::ostream& os, const Device& d);
+bool operator< (const Device& a, const Device& b);
+
+using DeviceSet = std::set<Device>;
+DeviceSet devices ();
 
 } // namespace usbcdc
 

@@ -113,7 +113,7 @@ static bool deviceIsValid (const Device& d) {
     return d.path().size() && d.productString().size();
 }
 
-DeviceList devices () {
+DeviceSet devices () {
     using std::begin;
     using std::end;
     auto rng = traverseDirR(sysDevices())
@@ -122,7 +122,7 @@ DeviceList devices () {
         | transformed(toDevice)
         | filtered(deviceIsValid)
         ;
-    return DeviceList(begin(rng), end(rng));
+    return DeviceSet(begin(rng), end(rng));
 }
 
 } // namespace usbcdc

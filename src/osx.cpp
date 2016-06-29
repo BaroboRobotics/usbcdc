@@ -46,7 +46,7 @@ static unsigned darwinVersionMajor () {
 
 static CF::String getStringProperty (io_object_t device, CF::String key, bool recursive=false) {
     auto valueRef = IORegistryEntrySearchCFProperty(device,
-        kIOServicePlane, key, 
+        kIOServicePlane, key,
         kCFAllocatorDefault, recursive
                              ? kIORegistryIterateRecursively
                              : kNilOptions);
@@ -137,11 +137,11 @@ private:
     Device mDevice;
 };
 
-DeviceList devices () {
+DeviceSet devices () {
     using std::begin;
     using std::end;
     auto it = DeviceIterator{};
-    return DeviceList(begin(it), end(it));
+    return DeviceSet(begin(it), end(it));
 }
 
 } // namespace usbcdc
