@@ -1,5 +1,7 @@
 #include <usbcdc/devices.hpp>
 
+#include <util/traversedir.hpp>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <boost/filesystem.hpp>
@@ -7,7 +9,6 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/iterator_range.hpp>
 
 #include <boost/system/error_code.hpp>
 
@@ -32,13 +33,6 @@ static fs::path sysDevices () {
     }
     return sd;
 }
-
-static boost::iterator_range<fs::recursive_directory_iterator>
-traverseDirR (const fs::path& root) {
-    return boost::make_iterator_range(
-        fs::recursive_directory_iterator{root},
-        fs::recursive_directory_iterator{});
-};
 
 // For use with Boost.Range's filtered adaptor
 struct BySubsystem {
@@ -89,7 +83,7 @@ static Device toDevice (const fs::path& p) {
         std::string productString;
         fs::ifstream productStream{productPath};
         if (std::getline(productStream, productString)) {
-            for (const auto& tty : traverseDirR(p / "tty")
+            for (const auto& tty : util::traverseDirR(p / "tty")
                                    | filtered(BySubsystem{"tty"})) {
                 auto uePath = tty / "uevent";
                 if (fs::exists(uePath)) {
@@ -116,7 +110,7 @@ static bool deviceIsValid (const Device& d) {
 DeviceSet devices () {
     using std::begin;
     using std::end;
-    auto rng = traverseDirR(sysDevices())
+    auto rng = util::traverseDirR(sysDevices())
         | filtered(BySubsystem{"usb"})
         | filtered(ByUsbInterfaceClass{UsbClass::cdc})
         | transformed(toDevice)
