@@ -17,8 +17,13 @@ std::ostream& operator<< (std::ostream& os, const Device& d) {
 }
 
 bool operator< (const Device& a, const Device& b) {
-    return std::lexicographical_compare(a.path().begin(), a.path().end(),
-        b.path().begin(), b.path().end());
+    if (a.path() < b.path()) {
+        return true;
+    }
+    if (a.path() == b.path() && a.productString() < b.productString()) {
+        return true;
+    }
+    return false;
 }
 
 } // usbcdc
