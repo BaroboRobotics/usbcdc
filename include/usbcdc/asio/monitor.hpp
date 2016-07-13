@@ -32,23 +32,31 @@ namespace usbcdc { namespace asio {
 class MonitorImpl : public std::enable_shared_from_this<MonitorImpl> {
 public:
     explicit MonitorImpl (boost::asio::io_service& context);
-    void init ();
+    //void init ();
 
     void close (boost::system::error_code& ec);
 
+#if 0
     template <class CompletionToken>
     auto asyncReceiveDevice (CompletionToken&& token);
+    // Receive one hotplug-add notice in the form of a `usbcdc::Device`. This is not quite as
+    // useful as it sounds without hotplug-removal notices in yet.
+#endif
+
+    template <class CompletionToken>
+    auto asyncDevices (CompletionToken&& token);
+    // Fetch the current known device set in the form of `usbcdc::DeviceSet`.
 
 private:
     boost::asio::io_service& mContext;
 
     util::asio::IoThread mPollingThread;
-    std::atomic<bool> mTerminatePollingThread { false };
-    DeviceSet mCurrentDeviceSet;
+    //std::atomic<bool> mTerminatePollingThread { false };
+    //DeviceSet mCurrentDeviceSet;
 
-    util::ProducerConsumerQueue<boost::system::error_code, Device> mDeviceQueue;
+    //util::ProducerConsumerQueue<boost::system::error_code, Device> mDeviceQueue;
 
-    mutable util::log::Logger mLog;
+    //mutable util::log::Logger mLog;
 };
 
 inline MonitorImpl::MonitorImpl (boost::asio::io_service& context)
@@ -56,20 +64,21 @@ inline MonitorImpl::MonitorImpl (boost::asio::io_service& context)
 {
 }
 
+#if 0
 inline void MonitorImpl::init () {
-    auto deviceSet = devices();
+    mCurrentDeviceSet = devices();
     auto self = this->shared_from_this();
-    util::asio::v2::asyncDispatch(mPollingThread.context(),
+    util::asio::asyncDispatch(mPollingThread.context(),
         std::make_tuple(),
         [ this
         , self
-        , newDeviceSet = deviceSet
-        , currentDeviceSet = deviceSet
-        , previousDeviceSet = deviceSet
+        //, newDeviceSet = mCurrentDeviceSet
+        //, previousDeviceSet = mCurrentDeviceSet
         ]
         (auto&& op) mutable {
             reenter (op) {
                 while (!mTerminatePollingThread) {
+#if 0
                     if (newDeviceSet.size()) {
                         mContext.post([this, self, newDeviceSet]() mutable {
                             for (auto&& d : newDeviceSet) {
@@ -77,23 +86,28 @@ inline void MonitorImpl::init () {
                             }
                         });
                     }
+#endif
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-                    currentDeviceSet = devices();
+                    mCurrentDeviceSet = devices();
+#if 0
                     newDeviceSet.clear();
-                    std::set_difference(currentDeviceSet.begin(), currentDeviceSet.end(),
+
+                    std::set_difference(mCurrentDeviceSet.begin(), mCurrentDeviceSet.end(),
                         previousDeviceSet.begin(), previousDeviceSet.end(),
                         std::inserter(newDeviceSet, newDeviceSet.end()));
-                    // newDeviceSet = currentDeviceSet - previousDeviceSet
+                    // newDeviceSet = mCurrentDeviceSet - previousDeviceSet
 
-                    previousDeviceSet = currentDeviceSet;
+                    previousDeviceSet = mCurrentDeviceSet;
+#endif
                 }
                 op.complete();
             }
         },
         [this, self]() mutable {
             BOOST_LOG(mLog) << "USB-CDC device monitor polling task completed";
+#if 0
             mContext.post([this, self]() mutable {
                 while (mDeviceQueue.depth() < 0) {
                     mDeviceQueue.produce(boost::asio::error::operation_aborted, Device{});
@@ -105,15 +119,18 @@ inline void MonitorImpl::init () {
                     });
                 }
             });
+#endif
         }
     );
 }
+#endif
 
-void MonitorImpl::close (boost::system::error_code& ec) {
-    mTerminatePollingThread = true;
+inline void MonitorImpl::close (boost::system::error_code& ec) {
+    //mTerminatePollingThread = true;
     ec = {};
 }
 
+#if 0
 template <class CompletionToken>
 inline auto MonitorImpl::asyncReceiveDevice (CompletionToken&& token) {
     util::asio::AsyncCompletion<
@@ -124,16 +141,31 @@ inline auto MonitorImpl::asyncReceiveDevice (CompletionToken&& token) {
 
     return init.result.get();
 }
+#endif
+
+template <class CompletionToken>
+inline auto MonitorImpl::asyncDevices (CompletionToken&& token) {
+    util::asio::AsyncCompletion<
+        CompletionToken, void(boost::system::error_code, DeviceSet)
+    > init { std::forward<CompletionToken>(token) };
+
+    mPollingThread.context().dispatch([this, handler = std::move(init.handler)]() mutable {
+        mContext.dispatch(std::bind(handler, boost::system::error_code(), usbcdc::devices()));
+    });
+
+    return init.result.get();
+}
 
 class Monitor : public util::asio::TransparentIoObject<MonitorImpl> {
 public:
     explicit Monitor (boost::asio::io_service& context)
         : util::asio::TransparentIoObject<MonitorImpl>(context)
     {
-        this->get_implementation()->init();
+        //this->get_implementation()->init();
     }
 
-    UTIL_ASIO_DECL_ASYNC_METHOD(asyncReceiveDevice)
+    //UTIL_ASIO_DECL_ASYNC_METHOD(asyncReceiveDevice)
+    UTIL_ASIO_DECL_ASYNC_METHOD(asyncDevices)
 };
 
 }} // usbcdc::asio
