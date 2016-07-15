@@ -51,7 +51,7 @@ private:
     boost::asio::io_service& mContext;
 
     util::asio::IoThread mPollingThread;
-    //std::atomic<bool> mTerminatePollingThread { false };
+    std::atomic<bool> mTerminateSignalled { false };
     //DeviceSet mCurrentDeviceSet;
 
     //util::ProducerConsumerQueue<boost::system::error_code, Device> mDeviceQueue;
@@ -150,6 +150,19 @@ inline auto MonitorImpl::asyncDevices (CompletionToken&& token) {
     > init { std::forward<CompletionToken>(token) };
 
     mPollingThread.context().dispatch([this, handler = std::move(init.handler)]() mutable {
+        usbcdc::DeviceSet devices;
+        auto done = false;
+        while (!mTerminateSignalled && !done) {
+            try {
+                // usbcdc::devices() sometimes throws a recursive_directory_iterator error on linux
+                devices = usbcdc::devices();
+                done = true;
+            }
+            catch (std::exception& e) {
+                util::log::Logger lg;
+                BOOST_LOG(lg) << "Exception thrown by usbcdc::devices(): " << e.what();
+            }
+        }
         mContext.dispatch(std::bind(handler, boost::system::error_code(), usbcdc::devices()));
     });
 
