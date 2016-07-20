@@ -163,7 +163,7 @@ inline auto MonitorImpl::asyncDevices (CompletionToken&& token) {
                 BOOST_LOG(lg) << "Exception thrown by usbcdc::devices(): " << e.what();
             }
         }
-        mContext.dispatch(std::bind(handler, boost::system::error_code(), usbcdc::devices()));
+        mContext.dispatch(std::bind(handler, boost::system::error_code(), std::move(devices)));
     });
 
     return init.result.get();
