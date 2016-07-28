@@ -53,7 +53,7 @@ struct UdevadmGrammar : qi::grammar<Iter, std::map<std::string, std::string>()> 
         property %= key >> '=' >> value >> qi::eol;
 
         key.name("key");
-        key %= +(qi::char_ - '=');
+        key %= +(qi::char_ - qi::eol - '=');
 
         value.name("value");
         value %= +(qi::char_ - qi::eol);
