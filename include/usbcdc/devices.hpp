@@ -14,6 +14,8 @@ public:
     Device (const std::string& path, const std::string& productString)
         : mPath(path), mProductString(productString)
     {}
+    void path (const std::string& p) { mPath = p; }
+    void productString (const std::string& ps) { mProductString = ps; }
     const std::string& path () const { return mPath; }
     const std::string& productString () const { return mProductString; }
 private:
