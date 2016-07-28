@@ -5,11 +5,14 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem iostreams)
 find_package(cxx-util)
 
-if(APPLE)
-    add_subdirectory(CFPP)
+set(SOURCES src/deviceoperators.cpp)
+if(WIN32)
+    list(APPEND SOURCES src/windows/devices.cpp)
+elseif(APPLE)
+    list(APPEND SOURCES src/macos/devices.cpp)
+else()
+    list(APPEND SOURCES src/linux/devices.cpp src/linux/parseudevadm.cpp)
 endif()
-
-set(SOURCES src/devices.cpp)
 
 add_library(usbcdc STATIC ${SOURCES})
 
@@ -29,6 +32,7 @@ target_link_libraries(usbcdc
 if(WIN32)
     target_link_libraries(usbcdc PRIVATE setupapi)
 elseif(APPLE)
+    add_subdirectory(CFPP)
     find_library(coreFoundationLib CoreFoundation)
     find_library(ioKitLib IOKit)
     target_link_libraries(usbcdc
