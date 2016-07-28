@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2.1)
 project(usbcdc VERSION 0.1.0)
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem iostreams)
 find_package(cxx-util)
 
 if(APPLE)
@@ -18,8 +18,13 @@ set_target_properties(usbcdc
                CXX_STANDARD_REQUIRED ON
                )
 
-target_include_directories(usbcdc PRIVATE include PUBLIC ${Boost_INCLUDE_DIRS})
-target_link_libraries(usbcdc PUBLIC barobo::cxx-util ${Boost_LIBRARIES})
+target_include_directories(usbcdc
+    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+)
+target_link_libraries(usbcdc
+    PUBLIC
+        barobo::cxx-util Boost::system Boost::filesystem Boost::iostreams
+)
 
 if(WIN32)
     target_link_libraries(usbcdc PRIVATE setupapi)
@@ -61,9 +66,7 @@ install(EXPORT barobo
     DESTINATION cmake
 )
 
-file(WRITE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-    "include(\"\${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}-targets.cmake\")"
-)
+configure_file(${PROJECT_NAME}-config.cmake.in ${PROJECT_NAME}-config.cmake @ONLY)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
