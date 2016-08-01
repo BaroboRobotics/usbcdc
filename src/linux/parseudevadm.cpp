@@ -80,7 +80,10 @@ std::string decodeProductString (std::string input) {
     // `\xhh` where `h` is a hexadecimal digit. Decode all such instances. This is a bit ugly.
     boost::algorithm::find_format_all(
         input,
-        boost::algorithm::regex_finder(boost::regex(R"(\\x[0-9a-fA-F]{2})")),
+        boost::algorithm::regex_finder(boost::regex(R"(\\x([0-9a-fA-F]{2}))")),
+        // I originally tried `regex_formatter(std::string(R"(\x\1)"))` instead of this lambda,
+        // but this does not produce a correct string, and it causes a segfault later that I didn't
+        // figure out.
         [](const auto& result) {
             char c;
             assert(std::distance(result.begin(), result.end()) == 4);
