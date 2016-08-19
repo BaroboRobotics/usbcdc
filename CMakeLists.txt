@@ -17,9 +17,14 @@ endif()
 add_library(usbcdc STATIC ${SOURCES})
 
 set_target_properties(usbcdc
-    PROPERTIES CXX_STANDARD 14
-               CXX_STANDARD_REQUIRED ON
-               )
+    PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED ON
+        POSITION_INDEPENDENT_CODE ON
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        MACOSX_RPATH ON
+)
 
 target_include_directories(usbcdc
     PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
