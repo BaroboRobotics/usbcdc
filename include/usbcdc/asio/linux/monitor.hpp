@@ -63,7 +63,8 @@ static inline auto executeUdevadmMonitor (boost::asio::io_service& context,
         boost::process::search_path("stdbuf"),
         "-oL",
         // When run in a terminal, `udevadm` has line-buffered output. That is, as soon
-        // as `udevadm` emits a newline, its output buffer is flushed. When run in a pipeline, // `udevadm` has block-buffered output, so its output buffer is flushed much less
+        // as `udevadm` emits a newline, its output buffer is flushed. When run in a pipeline,
+        // `udevadm` has block-buffered output, so its output buffer is flushed much less
         // frequently. Since `udevadm` demarcates its event records with newlines, we must
         // force its stdout pipe to be line-buffered to have any hope of receiving events in
         // real-time. `stdout -oL <cmd...>` is an easy way of doing this.
