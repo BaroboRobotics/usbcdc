@@ -1,6 +1,6 @@
 #include <util/doctest.h>
 
-#include <usbcdc/asio/monitor.hpp>
+#include <usbcdc/monitor.hpp>
 
 namespace {
 
