@@ -5,6 +5,8 @@
 
 #include <boost/predef.h>
 
+#include <iostream>
+
 namespace usbcdc {
 
 struct DeviceEvent {
@@ -14,6 +16,10 @@ struct DeviceEvent {
     } type;
     Device device;
 };
+
+inline std::ostream& operator<<(std::ostream& os, DeviceEvent event) {
+    return os << (event.type == DeviceEvent::ADD ? "ADD " : "REMOVE ") << event.device;
+}
 
 } // usbcdc
 
