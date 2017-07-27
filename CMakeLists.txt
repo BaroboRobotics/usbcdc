@@ -5,7 +5,7 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem iostreams)
 find_package(cxx-util)
 
-set(SOURCES src/deviceoperators.cpp)
+set(SOURCES src/deviceoperators.cpp src/devices.cpp)
 if(WIN32)
     list(APPEND SOURCES src/windows/devices.cpp)
 elseif(APPLE)

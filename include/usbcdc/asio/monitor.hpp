@@ -20,7 +20,7 @@ struct DeviceEvent {
 #if BOOST_OS_LINUX
 #include <usbcdc/asio/linux/monitor.hpp>
 #else
-#error "usbcdc::Monitor is not implemented for your platform"
+#include <usbcdc/asio/generic/monitor.hpp>
 #endif
 
 #endif

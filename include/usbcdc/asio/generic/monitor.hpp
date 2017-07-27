@@ -1,187 +1,183 @@
-// A dumb, generic implementation of a USB-CDC device monitor using usbcdc::devices(). This is not
-// efficient. Possible improvements include:
-//   - implement the polling logic (devices()) in a service rather than the object implementation
-//   - use udevadm on linux to monitor
-//   - use libudev on linux to monitor
-//   - Use SetupAPI and IORegistry on Windows and Mac to monitor
-
-#ifndef USBCDC_ASIO_GENERIC_MONITOR_HPP
-#define USBCDC_ASIO_GENERIC_MONITOR_HPP
+#ifndef USBCDC_GENERIC_MONITOR_HPP
+#define USBCDC_GENERIC_MONITOR_HPP
 
 #include <usbcdc/devices.hpp>
 
-#include <util/asio/asynccompletion.hpp>
-#include <util/asio/transparentservice.hpp>
-#include <util/asio/iothread.hpp>
-
-#include <util/producerconsumerqueue.hpp>
 #include <util/log.hpp>
+#include <util/producerconsumerqueue.hpp>
 
-#include <algorithm>
-#include <atomic>
-#include <iterator>
+#include <composed/op.hpp>
+
+#include <beast/core/handler_alloc.hpp>
+
+#include <boost/asio/steady_timer.hpp>
+
+#include <exception>
+#include <future>
 #include <memory>
-#include <stdexcept>
-#include <string>
-#include <utility>
 
 #include <boost/asio/yield.hpp>
 
-namespace usbcdc { namespace asio {
+namespace usbcdc {
 
-class MonitorImpl : public std::enable_shared_from_this<MonitorImpl> {
+class Monitor {
 public:
-    explicit MonitorImpl (boost::asio::io_service& context);
-    //void init ();
+    explicit Monitor(boost::asio::io_service& c)
+        : timer(c)
+    {}
 
-    void close (boost::system::error_code& ec);
-
-#if 0
-    template <class CompletionToken>
-    auto asyncReceiveDevice (CompletionToken&& token);
-    // Receive one hotplug-add notice in the form of a `usbcdc::Device`. This is not quite as
-    // useful as it sounds without hotplug-removal notices in yet.
-#endif
-
-    template <class CompletionToken>
-    auto asyncDevices (CompletionToken&& token);
-    // Fetch the current known device set in the form of `usbcdc::DeviceSet`.
-
-private:
-    boost::asio::io_service& mContext;
-
-    util::asio::IoThread mPollingThread;
-    std::atomic<bool> mTerminateSignalled { false };
-    //DeviceSet mCurrentDeviceSet;
-
-    //util::ProducerConsumerQueue<boost::system::error_code, Device> mDeviceQueue;
-
-    //mutable util::log::Logger mLog;
-};
-
-inline MonitorImpl::MonitorImpl (boost::asio::io_service& context)
-    : mContext(context)
-{
-}
-
-#if 0
-inline void MonitorImpl::init () {
-    mCurrentDeviceSet = devices();
-    auto self = this->shared_from_this();
-    util::asio::asyncDispatch(mPollingThread.context(),
-        std::make_tuple(),
-        [ this
-        , self
-        //, newDeviceSet = mCurrentDeviceSet
-        //, previousDeviceSet = mCurrentDeviceSet
-        ]
-        (auto&& op) mutable {
-            reenter (op) {
-                while (!mTerminatePollingThread) {
-#if 0
-                    if (newDeviceSet.size()) {
-                        mContext.post([this, self, newDeviceSet]() mutable {
-                            for (auto&& d : newDeviceSet) {
-                                mDeviceQueue.produce(boost::system::error_code(), d);
-                            }
-                        });
-                    }
-#endif
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-                    mCurrentDeviceSet = devices();
-#if 0
-                    newDeviceSet.clear();
-
-                    std::set_difference(mCurrentDeviceSet.begin(), mCurrentDeviceSet.end(),
-                        previousDeviceSet.begin(), previousDeviceSet.end(),
-                        std::inserter(newDeviceSet, newDeviceSet.end()));
-                    // newDeviceSet = mCurrentDeviceSet - previousDeviceSet
-
-                    previousDeviceSet = mCurrentDeviceSet;
-#endif
-                }
-                op.complete();
-            }
-        },
-        [this, self]() mutable {
-            BOOST_LOG(mLog) << "USB-CDC device monitor polling task completed";
-#if 0
-            mContext.post([this, self]() mutable {
-                while (mDeviceQueue.depth() < 0) {
-                    mDeviceQueue.produce(boost::asio::error::operation_aborted, Device{});
-                }
-                while (mDeviceQueue.depth() > 0) {
-                    mDeviceQueue.consume([this](boost::system::error_code ec, Device d) {
-                        BOOST_LOG(mLog) << "USB-CDC monitor discarding device "
-                            << d << ':' << ec.message();
-                    });
-                }
-            });
-#endif
-        }
-    );
-}
-#endif
-
-inline void MonitorImpl::close (boost::system::error_code& ec) {
-    //mTerminatePollingThread = true;
-    ec = {};
-}
-
-#if 0
-template <class CompletionToken>
-inline auto MonitorImpl::asyncReceiveDevice (CompletionToken&& token) {
-    util::asio::AsyncCompletion<
-        CompletionToken, void(boost::system::error_code, Device)
-    > init { std::forward<CompletionToken>(token) };
-
-    mDeviceQueue.consume(std::move(init.handler));
-
-    return init.result.get();
-}
-#endif
-
-template <class CompletionToken>
-inline auto MonitorImpl::asyncDevices (CompletionToken&& token) {
-    util::asio::AsyncCompletion<
-        CompletionToken, void(boost::system::error_code, DeviceSet)
-    > init { std::forward<CompletionToken>(token) };
-
-    mPollingThread.context().dispatch([this, handler = std::move(init.handler)]() mutable {
-        usbcdc::DeviceSet devices;
-        auto done = false;
-        while (!mTerminateSignalled && !done) {
-            try {
-                // usbcdc::devices() sometimes throws a recursive_directory_iterator error on linux
-                devices = usbcdc::devices();
-                done = true;
-            }
-            catch (std::exception& e) {
-                util::log::Logger lg;
-                BOOST_LOG(lg) << "Exception thrown by usbcdc::devices(): " << e.what();
-            }
-        }
-        mContext.dispatch(std::bind(handler, boost::system::error_code(), std::move(devices)));
-    });
-
-    return init.result.get();
-}
-
-class Monitor : public util::asio::TransparentIoObject<MonitorImpl> {
-public:
-    explicit Monitor (boost::asio::io_service& context)
-        : util::asio::TransparentIoObject<MonitorImpl>(context)
-    {
-        //this->get_implementation()->init();
+    ~Monitor() {
+        boost::system::error_code ec;
+        close(ec);
     }
 
-    //UTIL_ASIO_DECL_ASYNC_METHOD(asyncReceiveDevice)
-    UTIL_ASIO_DECL_ASYNC_METHOD(asyncDevices)
+    boost::asio::io_service& get_io_service();
+
+    void close(boost::system::error_code& ec);
+
+private:
+    template <class Handler = void(boost::system::error_code, DeviceSet)>
+    struct DevicesOp;
+
+    template <class Handler = void(boost::system::error_code, DeviceEvent)>
+    struct ReceiveDeviceEventOp;
+
+public:
+    template <class Token>
+    auto asyncDevices(Token&& token) {
+        // Get the initial set of devices present in the system. Should only be called once, before
+        // any calls to `asyncReceiveDeviceEvent()`.
+        return composed::operation<DevicesOp<>>{}(*this, std::forward<Token>(token));
+    }
+
+    template <class Token>
+    auto asyncReceiveDeviceEvent(Token&& token) {
+        // Wait for the monitor to detect the arrival or removal of a device in the system. Should
+        // only be called after `asyncDevices()`.
+        return composed::operation<ReceiveDeviceEventOp<>>{}(*this, std::forward<Token>(token));
+    }
+
+private:
+    DeviceSet lastDevices;
+    std::chrono::time_point<std::chrono::steady_clock> lastDevicesTime;
+    boost::asio::steady_timer timer;
+    std::queue<DeviceEvent> eventQueue;
+
+    static constexpr const std::chrono::milliseconds kPollInterval{500};
 };
 
-}} // usbcdc::asio
+inline boost::asio::io_service& Monitor::get_io_service() { return timer.get_io_service(); }
+inline void Monitor::close(boost::system::error_code& ec) {
+    timer.expires_at(decltype(timer)::clock_type::time_point::max(), ec);
+}
+
+// =======================================================================================
+// Devices operation
+
+template <class Handler>
+struct Monitor::DevicesOp: boost::asio::coroutine {
+    using handler_type = Handler;
+    using allocator_type = beast::handler_alloc<char, handler_type>;
+
+    Monitor& self;
+
+    composed::associated_logger_t<handler_type> lg;
+    boost::system::error_code ec;
+
+    DevicesOp(handler_type& h, Monitor& m)
+        : self(m)
+        , lg(composed::get_associated_logger(h))
+    {}
+
+    void operator()(composed::op<DevicesOp>&);
+};
+
+template <class Handler>
+void Monitor::DevicesOp<Handler>::operator()(composed::op<DevicesOp>& op) {
+    if (!ec) reenter(this) {
+        yield return self.timer.get_io_service().post(op());
+
+        try {
+            self.lastDevices = devices();
+            self.lastDevicesTime = std::chrono::steady_clock::now();
+            // FIXME FIXME FIXME :(
+            // We should really generate events and put them on the event queue here. The way it's
+            // written, you must call `asyncDevices()` before `asyncReceiveDeviceEvent()`.
+        }
+        catch (const boost::system::system_error& e) {
+            BOOST_LOG(lg) << "devices() threw: " << e.what();
+            ec = e.code();
+        }
+        catch (const std::exception& e) {
+            BOOST_LOG(lg) << "devices() threw: " << e.what();
+            ec = boost::asio::error::network_down;
+        }
+    }
+    op.complete(ec, self.lastDevices);
+};
+
+// =======================================================================================
+// ReceiveDeviceEvent operation
+
+template <class Handler>
+struct Monitor::ReceiveDeviceEventOp: boost::asio::coroutine {
+    using handler_type = Handler;
+    using allocator_type = beast::handler_alloc<char, handler_type>;
+
+    Monitor& self;
+
+    DeviceEvent event;
+    // With some refactoring we could avoid storing this, using self.eventQueue.front() as the op's
+    // result, requiring the op to pop the queue on entry. Sounds annoying.
+
+    composed::associated_logger_t<handler_type> lg;
+    boost::system::error_code ec;
+
+    ReceiveDeviceEventOp(handler_type& h, Monitor& m)
+        : self(m)
+        , lg(composed::get_associated_logger(h))
+    {}
+
+    void operator()(composed::op<ReceiveDeviceEventOp>&);
+};
+
+template <class Handler>
+void Monitor::ReceiveDeviceEventOp<Handler>::operator()(composed::op<ReceiveDeviceEventOp>& op) {
+    if (!ec) reenter(this) {
+        while (true) {
+            if (self.eventQueue.size()) {
+                event = self.eventQueue.front();
+                self.eventQueue.pop();
+                yield return self.timer.get_io_service().post(op());
+                yield break;
+            }
+
+            if (self.timer.expires_at() == decltype(self.timer)::clock_type::time_point::min()) {
+                ec = boost::asio::error::operation_aborted;
+                yield return self.timer.get_io_service().post(op());
+            }
+            self.timer.expires_at(self.lastDevicesTime + self.kPollInterval);
+            yield return self.timer.async_wait(op(ec));
+
+            {
+                auto newDevices = devices();
+                auto diff = deviceSetDifferences(self.lastDevices, newDevices);
+                for (auto d: diff.added) {
+                    self.eventQueue.push({DeviceEvent::ADD, d});
+                }
+                for (auto d: diff.removed) {
+                    self.eventQueue.push({DeviceEvent::REMOVE, d});
+                }
+
+                self.lastDevices = newDevices;
+                self.lastDevicesTime = std::chrono::steady_clock::now();
+            }
+        }
+    }
+    op.complete(ec, event);
+};
+
+} // usbcdc
 
 #include <boost/asio/unyield.hpp>
 

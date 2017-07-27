@@ -29,6 +29,15 @@ bool operator< (const Device& a, const Device& b);
 using DeviceSet = std::set<Device>;
 DeviceSet devices ();
 
+struct DeviceSetDifferences {
+    DeviceSet added;
+    DeviceSet removed;
+};
+
+DeviceSetDifferences deviceSetDifferences(const DeviceSet& a, const DeviceSet& b);
+// Returns the two sets `added` (devices present in `b` but not `a`), and `removed (devices present
+// in `a` but not `b`).
+
 } // namespace usbcdc
 
 #endif
