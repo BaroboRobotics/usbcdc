@@ -53,6 +53,12 @@ set_target_properties(usbcdc PROPERTIES
     MACOSX_RPATH ON
 )
 
+option(USBCDC_BUILD_TESTS "Build usbcdc tests" ON)
+if(USBCDC_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 install(TARGETS usbcdc EXPORT barobo
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
