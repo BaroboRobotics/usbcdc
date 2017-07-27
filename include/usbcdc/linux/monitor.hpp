@@ -1,5 +1,5 @@
-#ifndef USBCDC_ASIO_LINUX_MONITOR_HPP
-#define USBCDC_ASIO_LINUX_MONITOR_HPP
+#ifndef USBCDC_LINUX_MONITOR_HPP
+#define USBCDC_LINUX_MONITOR_HPP
 
 #include <util/asio/asynccompletion.hpp>
 #include <util/asio/operation.hpp>
@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-namespace usbcdc { namespace asio {
+namespace usbcdc {
 
 class MonitorImpl {
 public:
@@ -175,7 +175,7 @@ public:
     UTIL_ASIO_DECL_ASYNC_METHOD(asyncReceiveDeviceEvent)
 };
 
-}} // usbcdc::asio
+} // usbcdc
 
 #include <boost/asio/unyield.hpp>
 

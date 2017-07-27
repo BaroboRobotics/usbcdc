@@ -1,4 +1,4 @@
-#include <usbcdc/asio/monitor.hpp>
+#include <usbcdc/monitor.hpp>
 
 #include <util/log.hpp>
 
@@ -22,7 +22,7 @@
 #include <map>
 #include <string>
 
-namespace usbcdc { namespace asio {
+namespace usbcdc {
 
 namespace {
 namespace qi = boost::spirit::qi;
@@ -145,4 +145,4 @@ bool parseUdevadm (boost::asio::streambuf& buf, size_t n, DeviceEvent& event) {
     return true;
 }
 
-}} // usbcdc::asio
+} // usbcdc
