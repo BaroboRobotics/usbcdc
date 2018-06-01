@@ -116,7 +116,13 @@ private:
                                             nullptr, 0,
                                             &size, 0)) {
             auto err = GetLastError();
-            if (ERROR_INSUFFICIENT_BUFFER != err) {
+            switch (err) {
+              case ERROR_INSUFFICIENT_BUFFER:
+                break;
+              case ERROR_NOT_FOUND:
+                /* if no property found, just return a null string */
+                return {};
+              default:
                 throw util::windows::Error{"SetupDiGetDeviceProperty", err};
             }
         }
